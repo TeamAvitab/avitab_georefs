@@ -288,20 +288,34 @@ Use the following keys while the tool is running:
 
 - The project is specifically oriented to UK (EG) aeronautical charts. However, the scripts could be adapted/refactored in future for use with other country's AIP charts.
 
-## Georef releases
-The actual georef release zips can be downloaded from TeamAvitab using either of 2 URLs:
-```
-https://github.com/TeamAvitab/avitab_georefs/releases/latest/download/TeamAvitabGeorefs.zip
-```
-which is the latest, and should include georefs for the current AIRAC cycle.
+## Links
+The Github Pages version of this README.md is:
 
-Or to get a specific pair of georefs:
-```
+https://teamavitab.github.io/avitab_georefs
+
+The Github repo for avitab_georefs is:
+
+https://github.com/TeamAvitab/avitab_georefs
+
+
+The actual georef release zips can be downloaded from TeamAvitab using either of 2 URLs:
+
+To get a specific, previously released, pair of georefs:
+
 https://github.com/TeamAvitab/avitab_georefs/releases/download/RELEASE/TeamAvitabGeorefs.zip
-```
-where RELEASE is the AIRAC pair, separated by an underscore
-e.g.
-```
+
+where RELEASE is the AIRAC pair, separated by an underscore. e.g.
+
 https://github.com/TeamAvitab/avitab_georefs/releases/download/2607_2608/TeamAvitabGeorefs.zip
-```
-The latest can change from e.g. 2607_2608 to 2608_2609 anytime during the 28 day period of AIRAC 2608
+
+The URL for the latest georefs, which should include georefs for the current AIRAC cycle, is:
+
+https://teamavitab.github.io/avitab_georefs/georefs/TeamAvitabGeorefs.zip
+
+Note that latest can be promoted from e.g. 2607_2608 to 2608_2609 anytime during the 28 day period of AIRAC 2608
+
+UK NATS AIP is at:
+
+https://nats-uk.ead-it.com/cms-nats/opencms/en/Publications/AIP
+
+
