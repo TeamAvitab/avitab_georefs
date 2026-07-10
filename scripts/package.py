@@ -14,8 +14,7 @@ from src.utils import get_json_hash, path_to_airac_id
 from src.airac import Airac
 
 
-icao_region_dir = Path("E_NorthernEurope")
-icao_country_dir = Path("EG_UnitedKingdom")
+icao_country_dir = Path("EG")
 
 def create_additional_files(output_dir, first_airac, last_airac, incremental):
     output_file = Path(output_dir) / "NOT_FOR_REAL_WORLD_NAVIGATION"
@@ -93,8 +92,8 @@ def package(base_ref_dir, airac_path_list):
                 continue
             hash_set.add(json_hash)
             airac = path_to_airac_id(airac_path)
-            dst = output_dir / str(airac) / str(icao_region_dir) / str(icao_country_dir) / \
-                  re.sub(".*?/EG[A-Z]/", "", str(json_path))
+            json_shortname = Path(str(json_path.name)[:9] + ".json")
+            dst = output_dir / str(airac) / str(icao_country_dir) / json_shortname
             print(dst)
             dst.parent.mkdir(parents=True, exist_ok=True)
             shutil.copyfile(json_path, dst)
