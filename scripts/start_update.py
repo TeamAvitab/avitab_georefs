@@ -93,15 +93,20 @@ def start_update(airac_cycle):
 
 def guess_airac_cycle():
     curr_airac = Airac.from_instant(datetime.now(timezone.utc))
+    prev_airac = curr_airac.get_previous()
+    prevm1_airac = prev_airac.get_previous()
     next_airac = curr_airac.get_next()
     nextp1_airac = next_airac.get_next()
     print(f"Current AIRAC {curr_airac.description()}")
     print("UK NATS AIP should also have chart downloads for:")
     print(f"Next    AIRAC {next_airac.description()}")
     print(f"Next+1  AIRAC {nextp1_airac.description()}")
+    print("UK NATS AIP might still have chart downloads for:")
+    print(f"Prev    AIRAC {prev_airac.description()}")
 
     print("TeamAvitab georefs available:")
-    prev_airac = curr_airac.get_previous()
+    prevm1_prev_avail = is_georef_available(prevm1_airac, prev_airac)
+    print(f"Georefs for {prevm1_airac}_{prev_airac} {"" if prevm1_prev_avail else "not "}released")
     prev_curr_avail = is_georef_available(prev_airac, curr_airac)
     print(f"Georefs for {prev_airac}_{curr_airac} {"" if prev_curr_avail else "not "}released")
     curr_next_avail = is_georef_available(curr_airac, next_airac)
@@ -109,7 +114,7 @@ def guess_airac_cycle():
     next_nextp1_avail = is_georef_available(next_airac, nextp1_airac)
     print(f"Georefs for {next_airac}_{nextp1_airac} {"" if next_nextp1_avail else "not "}released")
 
-    print()
+    print("")
     if next_nextp1_avail:
         nextp2_airac = nextp1_airac.get_next()
         print(f"All georefs up to date on TeamAvitab")
@@ -120,10 +125,13 @@ def guess_airac_cycle():
         return nextp1_airac
     elif prev_curr_avail:
         return next_airac
+    elif prevm1_prev_avail:
+        print(f"WARNING - the charts for AIRAC {prev_airac} might no longer be downloadable from NATS AIP ...")
+        return curr_airac
     else:
         print(f"Need to update to AIRAC {curr_airac}")
-        print(f"No TeamAvitab georefs released that would georef previous AIRAC {prev_airac}")
-        print(f"Download an alternative source of georefs (Avitab xplane.org forum) and run scripts individually")
+        print(f"Previous AIRAC {prev_airac} - no TeamAvitab georefs released")
+        print(f"Download an alternative source of georefs and run scripts individually")
         sys.exit(0)
 
 

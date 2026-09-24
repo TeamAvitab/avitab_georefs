@@ -120,13 +120,13 @@ def main():
         nargs='?'
     )
     parser.add_argument(
-        'input',
+        'input_dir',
         nargs='+',
         help="A list of AIRAC directories of which will be scanned for georef .json files",
     )
     args = parser.parse_args()
   
-    airac_path_list = [Path(p) for p in args.input]
+    airac_path_list = [Path(p) for p in args.input_dir]
     if not airac_path_list:
         parser.print_help()
         sys.exit(1)

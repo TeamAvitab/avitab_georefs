@@ -24,7 +24,7 @@ def check_airac_downloadable(airac: Airac):
     next_airac = current_airac.get_next()
     next_plus1_airac = next_airac.get_next()
     if airac not in [current_airac, next_airac, next_plus1_airac]:
-        raise RuntimeError("Invalid AIRAC cycle to download - UK AIP only hosts zips for the current, next and next+1 cycles")
+        print("WARNING: May no longer be downloadable - UK AIP only guarantees to host zips for the current, next and next+1 cycles")
         
 def clean_dir(airac_dir):
     for d in airac_dir.glob("*"):

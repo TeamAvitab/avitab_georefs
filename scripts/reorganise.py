@@ -21,7 +21,6 @@ from src.airac import Airac
 
 MAKE_CHANGES = True 
 MAX_PATH_LEN = 230 
-num_moved_pdfs = 0
 
 try: 
     from bs4 import BeautifulSoup 
@@ -155,7 +154,6 @@ def process_chart_entry(name_row, link_row, dir_name, html_file, description, ic
     aerodrome_name : str
         Human-readable aerodrome name.
     """
-    global num_moved_pdfs
     name_p = name_row.find('p')
     if not name_p:
         return None
@@ -205,7 +203,6 @@ def process_chart_entry(name_row, link_row, dir_name, html_file, description, ic
             print(f"Move {old_pdf_path}")
             print(f"  to {new_pdf_path}")
             print(f"In {html_file.name}, relink {old_pdf_link} -> {new_pdf_link}")
-        num_moved_pdfs += 1
     else:
         if "AmdtDeletedAIRAC" not in str(name_row):
             print(f"WARNING : {old_pdf_link} does not exist, linked in {html_file.name} - ignored")
@@ -268,11 +265,12 @@ def reorganise_charts_in_html(html_file: Path, dir_name: Path, verbose: bool):
     dir_name : Path
         Base directory where PDFs should be placed.
     """
+    html_changes = []
     with open(html_file, 'r', encoding='utf-8') as f:
         html_content = f.read()
         
     if not re.search("graphics/[0-9]+?.pdf", html_content):
-        return
+        return html_changes
     soup = BeautifulSoup(html_content, 'html.parser')
     div_id_name = determine_div_id_name(html_file)
     section = soup.find('div', id=lambda x: x and div_id_name in x)
@@ -288,14 +286,15 @@ def reorganise_charts_in_html(html_file: Path, dir_name: Path, verbose: bool):
         raise ValueError(f"No tables found in {div_id_name} section")
     for table in tables:
         changes = process_table(table, dir_name, html_file, description, icao, aerodrome_name, verbose)
+        html_changes.extend(changes)
         for old_link, new_pdf_link, _ in changes:
             if MAKE_CHANGES:
                 html_content = html_content.replace(old_link, new_pdf_link)
     with open(html_file, 'w', encoding='utf-8') as f:
         f.write(html_content)
+    return html_changes
 
 def reorganise(directory: Path, verbose: bool = False):
-    global num_moved_pdfs
     if not directory.exists():
         raise FileNotFoundError(f"Directory not found: {directory}")
     html_files = list(directory.rglob('*.html')) + list(directory.rglob('*.HTML'))
@@ -306,11 +305,12 @@ def reorganise(directory: Path, verbose: bool = False):
     if not aerodrome_enr_html_files:
         raise FileNotFoundError(f"No HTML files found with EG[A-Z][A-Z] ICAO code or 'ENR' in filename")
     count = 1
-    num_moved_pdfs = 0
     skipped = []
+    all_changes = []
     for html_file in aerodrome_enr_html_files:
         try:
-            reorganise_charts_in_html(html_file, directory, verbose)
+            html_changes = reorganise_charts_in_html(html_file, directory, verbose)
+            all_changes.extend(html_changes)
             if not verbose:
                 print(f"\rProcessing {count:3} of {len(aerodrome_enr_html_files)} : {html_file.name}" " "*10, end='')
         except Exception as e:
@@ -319,7 +319,12 @@ def reorganise(directory: Path, verbose: bool = False):
         count += 1
         
     if not verbose:
-        print(f"\rReorganised {num_moved_pdfs} pdf charts and relinked {len(aerodrome_enr_html_files)} aerodrome/enroute html files")
+        print(f"\rReorganised {len(all_changes)} pdf charts and relinked {len(aerodrome_enr_html_files)} aerodrome/enroute html files")
+        
+    with open(directory / "id_descriptive_map.csv", 'w', newline='') as csvfile:
+        csvwriter = csv.writer(csvfile, quoting=csv.QUOTE_MINIMAL)
+        for c in all_changes:
+            csvwriter.writerow( [os.path.basename(c[0]), os.path.basename(c[1])] )
         
     if skipped:
         print(f"WARNING : Skipped {len(skipped)} files")
