@@ -30,7 +30,10 @@ def clean_dir(airac_dir):
     for d in airac_dir.glob("*"):
         if d.suffix != ".zip":
             print(f"Delete {d}")
-            shutil.rmtree(d)
+            if d.is_dir():
+                shutil.rmtree(d)
+            else:
+                d.unlink()
 
 def download(cycle_identifier: str) -> Path:
     """Download and extract the AIRAC zip."""

@@ -49,9 +49,8 @@ def build_prev_airac(airac_prev, airac_new, airac_prev_dir):
     print()
     
     if not got_all_jsons:
-        print(f"\nIdeally, all georeference-able aerodrome charts in {airac_prev_dir}")
-        print(f"should have had a georef json copied from {prev_georef_dir}")
-        print(f"But the copy was incomplete")
+        print(f"\nIdeally, ALL georeference-able aerodrome charts in {airac_prev_dir}")
+        print(f"should have had a georef json copied in (e.g. from TeamAvitab), but the copy was incomplete")
         print(f"Please check AIRAC cycle and geoereference dir.")
         print(f"Or, if running an atypical use-case, you'll need to run the scripts individually")
         raise FileNotFoundError(f"Insufficient georef .json files for {airac_prev_dir}")

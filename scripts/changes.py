@@ -65,7 +65,7 @@ def check_pair(csv_out, old, new, old_num_desc_map, new_num_desc_map):
                 csv_out.writerow((old.name, old_num_desc_map[old.name], "", new_num_desc_map[new.name], "different pdf recalibrated"))
         else:
             if old_json_no_hash == new_json_no_hash:
-                raise ValueError(f"{old.name} -> {new.name} name change, different chart, same georef ! ?")
+                print(f"Warning - {old.name} -> {new.name} name change, different chart, same georef ! ?")
             else:
                 csv_out.writerow((old.name,  old_num_desc_map[old.name], new.name, new_num_desc_map[new.name], "name change with different chart and georef"))
 
