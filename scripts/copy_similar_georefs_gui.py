@@ -17,6 +17,7 @@ from src.utils import get_json_hash, get_pdf_hash, is_georefenceable, copy_json,
 pdf_pairs = []
 pdf_pair_index = 0
 image_index = 0
+AUTO_ACCEPT_SCORE_THRESHOLD = 100
 
 class ComparisonSet:
     """Container for all data related to a PDF comparison."""
@@ -134,6 +135,38 @@ def run_ui():
                                         f"Score: {comparison_set.difference_score}", \
                                         foreground = colors[comparison_set.suggestion])
 
+    def accept_low_score_comparison():
+        global pdf_pair_index, comparison_set
+
+        score = comparison_set.difference_score
+        if not isinstance(score, (int, float)) or score >= AUTO_ACCEPT_SCORE_THRESHOLD:
+            return False
+
+        print(f"{(pdf_pair_index + 1):3} of {len(pdf_pairs)} "
+              f"{'Auto-accept':11} (suggested {comparison_set.original_suggested_action:7}, "
+              f"diff score {score:9}) {comparison_set.old_pdf.name}")
+        copy_and_patch_json(comparison_set.old_pdf, comparison_set.new_pdf)
+        pdf_pair_index += 1
+        if pdf_pair_index < len(pdf_pairs):
+            old_pdf, new_pdf = pdf_pairs[pdf_pair_index]
+            comparison_set = ComparisonSet(old_pdf, new_pdf)
+        return True
+
+    def reject_resized_comparison():
+        global pdf_pair_index, comparison_set
+
+        if comparison_set.difference_score != "(Resized)":
+            return False
+
+        print(f"{(pdf_pair_index + 1):3} of {len(pdf_pairs)} "
+              f"{'Auto-reject':11} (suggested {comparison_set.original_suggested_action:7}, "
+              f"diff score {comparison_set.difference_score:9}) {comparison_set.old_pdf.name}")
+        pdf_pair_index += 1
+        if pdf_pair_index < len(pdf_pairs):
+            old_pdf, new_pdf = pdf_pairs[pdf_pair_index]
+            comparison_set = ComparisonSet(old_pdf, new_pdf)
+        return True
+
     def finalize(classification):
         global pdf_pair_index, image_index, comparison_set
         nonlocal root
@@ -151,22 +184,35 @@ def run_ui():
             classification = comparison_set.suggestion
             
         print(f"{(pdf_pair_index + 1):3} of {len(pdf_pairs)} " 
-              f"{classification:6} (suggested {comparison_set.original_suggested_action:7}, "
+              f"{classification:11} (suggested {comparison_set.original_suggested_action:7}, "
               f"diff score {comparison_set.difference_score:9}) {comparison_set.old_pdf.name}")
               
         if classification == "Accept":
             copy_and_patch_json(comparison_set.old_pdf, comparison_set.new_pdf)
-                
-        if pdf_pair_index >= len(pdf_pairs) - 1:
+
+        pdf_pair_index += 1
+        if pdf_pair_index < len(pdf_pairs):
+            old_pdf, new_pdf = pdf_pairs[pdf_pair_index]
+            comparison_set = ComparisonSet(old_pdf, new_pdf)
+
+        while pdf_pair_index < len(pdf_pairs) and (
+            accept_low_score_comparison() or reject_resized_comparison()
+        ):
+            pass
+
+        if pdf_pair_index >= len(pdf_pairs):
             root.destroy()
             return
-        
-        pdf_pair_index += 1
-        (old_pdf, new_pdf) = pdf_pairs[pdf_pair_index]
-        comparison_set = ComparisonSet(old_pdf, new_pdf)
+
         image_index = 0
         update_display()
     
+    while pdf_pair_index < len(pdf_pairs) and (
+        accept_low_score_comparison() or reject_resized_comparison()
+    ):
+        pass
+    if pdf_pair_index >= len(pdf_pairs):
+        return
     
     root = tk.Tk()
     root.geometry("1000x1000")
