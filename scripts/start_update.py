@@ -16,6 +16,9 @@ from status import status
 from src.airac import Airac
 from src.utils import airac_to_path, get_team_avitab_zip_paths, download_zip
 
+MIN_COMPLETE_PREV_PDFS = 900
+
+
 def is_georef_available(airac1, airac2):
     try:
         (url, zip_path, extract_dir) = get_team_avitab_zip_paths(airac1, airac2)  
@@ -55,13 +58,54 @@ def build_prev_airac(airac_prev, airac_new, airac_prev_dir):
         print(f"Or, if running an atypical use-case, you'll need to run the scripts individually")
         raise FileNotFoundError(f"Insufficient georef .json files for {airac_prev_dir}")
 
+
+def prepare_previous_airac(airac_prev, airac_new, airac_prev_dir):
+    if airac_prev_dir.exists():
+        if airac_prev_dir.is_symlink() or not airac_prev_dir.is_dir():
+            raise NotADirectoryError(f"Previous AIRAC path is not a directory: {airac_prev_dir}")
+
+        previous_status = status(airac_prev_dir, print_output=False)
+        if (
+            previous_status.total_pdfs > MIN_COMPLETE_PREV_PDFS
+            and previous_status.total_georeferenced == previous_status.total_pdfs
+            and previous_status.total_hash_mismatches == 0
+        ):
+            print(
+                f"Using existing previous AIRAC charts in {airac_prev_dir}: "
+                f"{previous_status.total_pdfs} PDFs, all georeferenced."
+            )
+            return True
+        else:
+            print(
+                f"Existing previous AIRAC charts in {airac_prev_dir} are incomplete: "
+                f"{previous_status.total_pdfs} PDFs, "
+                f"{previous_status.total_georeferenced} georeferenced, "
+                f"{previous_status.total_missing_json} missing georef JSON files, "
+                f"{previous_status.total_hash_mismatches} hash mismatches."
+            )
+            response = input(
+                f"Clean out {airac_prev_dir} and rebuild the previous AIRAC charts? [y/N]: "
+            )
+            if response.strip().lower() not in ("y", "yes"):
+                print("Update cancelled; previous AIRAC charts were not changed.")
+                return False
+
+            print(f"Removing existing charts from {airac_prev_dir} ...")
+            shutil.rmtree(airac_prev_dir)
+            build_prev_airac(airac_prev, airac_new, airac_prev_dir)
+    else:
+        build_prev_airac(airac_prev, airac_new, airac_prev_dir)
+    return True
+
+
 def start_update(airac_cycle):
     airac_new = Airac.from_identifier(airac_cycle)
     airac_prev = airac_new.get_previous()
     airac_new_dir = airac_to_path(airac_new)
     airac_prev_dir = airac_to_path(airac_prev)
-    
-    build_prev_airac(airac_prev, airac_new, airac_prev_dir)
+
+    if not prepare_previous_airac(airac_prev, airac_new, airac_prev_dir):
+        return
 
     print_heading(f"Download new AIRAC {airac_new} charts into {airac_new_dir} ...")
     print(f"Cmdline equivalent : './scripts/download.py {airac_new}'")
@@ -96,14 +140,14 @@ def guess_airac_cycle():
     prevm1_airac = prev_airac.get_previous()
     next_airac = curr_airac.get_next()
     nextp1_airac = next_airac.get_next()
-    print(f"Current AIRAC {curr_airac.description()}")
+    print(f"\nCurrent AIRAC {curr_airac.description()}\n")
     print("UK NATS AIP should also have chart downloads for:")
     print(f"Next    AIRAC {next_airac.description()}")
     print(f"Next+1  AIRAC {nextp1_airac.description()}")
     print("UK NATS AIP might still have chart downloads for:")
     print(f"Prev    AIRAC {prev_airac.description()}")
 
-    print("TeamAvitab georefs available:")
+    print("\nTeamAvitab georefs available:")
     prevm1_prev_avail = is_georef_available(prevm1_airac, prev_airac)
     print(f"Georefs for {prevm1_airac}_{prev_airac} {"" if prevm1_prev_avail else "not "}released")
     prev_curr_avail = is_georef_available(prev_airac, curr_airac)
